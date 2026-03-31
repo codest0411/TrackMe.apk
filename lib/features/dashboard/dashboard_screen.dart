@@ -1,176 +1,212 @@
 // lib/features/dashboard/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../shared/widgets/shared_widgets.dart';
 import '../../shared/services/services.dart';
 import '../../shared/models/models.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stepStatus = ref.watch(stepCountProvider);
-    final currentSteps = stepStatus.maybeWhen(data: (steps) => steps.steps, orElse: () => 0);
-    
-    // Static mockup data for heatmap
-    final mockDays = List.generate(182, (index) => ActivityDay(
-      date: DateTime.now().subtract(Duration(days: 181 - index)),
-      steps: (index % 10 == 0) ? 12000 : (index % 5 == 0) ? 8000 : 4000,
-    ));
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    const int dailyGoal = 10000;
+    const int currentSteps = 8432;
+    const double calories = 1240.0;
+    const int heartRate = 72;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 32),
-            _buildLiveStepCard(context, currentSteps),
-            const SizedBox(height: 24),
-            _buildHeatmapCard(context, mockDays),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(child: _buildStatCard(context, '1,240', 'kcal', Icons.local_fire_department_rounded, const Color(0xFFF94C10))),
-                const SizedBox(width: 16),
-                Expanded(child: _buildStatCard(context, '8.2', 'km', Icons.location_on_rounded, const Color(0xFF00E5FF))),
-              ],
+      extendBodyBehindAppBar: true,
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 400,
+            collapsedHeight: 100,
+            pinned: true,
+            stretch: true,
+            backgroundColor: Colors.black.withValues(alpha: 0.8),
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+              background: const _HeaderHero(steps: currentSteps, goal: dailyGoal),
+              title: Text('TRACKME', style: GoogleFonts.syne(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2, fontSize: 18)),
+              centerTitle: true,
+              titlePadding: const EdgeInsets.only(bottom: 16),
             ),
-            const SizedBox(height: 24),
-            _buildUpcomingWorkout(context),
-            const SizedBox(height: 100), // Bottom nav space
-          ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const _SectionHeader('BIOMETRICS LIVE'),
+                const SizedBox(height: 16),
+                const _StatisticGrid(calories: calories, heartRate: heartRate),
+                const SizedBox(height: 32),
+                const _SectionHeader('ACTIVITY CONSISTENCY'),
+                const SizedBox(height: 16),
+                const _HeatmapInteraction(),
+                const SizedBox(height: 32),
+                const _SectionHeader('TODAY\'S WORKOUTS'),
+                const SizedBox(height: 16),
+                const WorkoutCard(title: 'MORNING HIIT', emoji: '🔥', duration: '45m', burned: '420 kcal', intensity: '85%'),
+                const SizedBox(height: 12),
+                const WorkoutCard(title: 'RECOVERY YOGA', emoji: '🧘', duration: '20m', burned: '80 kcal', intensity: '30%'),
+                const SizedBox(height: 120),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader(this.title);
+  @override
+  Widget build(BuildContext context) {
+    return Text(title, style: const TextStyle(color: Colors.white24, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold));
+  }
+}
+
+class _HeatmapInteraction extends StatelessWidget {
+  const _HeatmapInteraction();
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<ActivityDay>>(
+      future: StorageService.getLastHalfYear(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        return PremiumCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ActivityHeatmap(days: snapshot.data!),
+              const SizedBox(height: 12),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text('90 Day consistency: ', style: TextStyle(color: Colors.white24, fontSize: 10)),
+                  Text('98%', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HeaderHero extends StatelessWidget {
+  final int steps, goal;
+  const _HeaderHero({required this.steps, required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.2,
+          colors: [Colors.blueAccent.withValues(alpha: 0.15), Colors.black],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 80),
+          child: StepRing(
+            steps: steps,
+            goal: goal,
+            size: 260,
+            baseColor: Colors.white10,
+            progressColor: Colors.blueAccent,
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+class _StatisticGrid extends StatelessWidget {
+  final double calories;
+  final int heartRate;
+  const _StatisticGrid({required this.calories, required this.heartRate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        Text('Good Morning, Alex 💪', style: GoogleFonts.syne(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 4),
-        Text('Ready for today\'s goal?', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 16)),
+        Expanded(child: AnimatedStatCard(label: 'CALORIES', value: '${calories.toInt()}', unit: 'kcal', icon: Icons.local_fire_department, color: Colors.orange)),
+        const SizedBox(width: 16),
+        Expanded(child: AnimatedStatCard(label: 'HEART RATE', value: '$heartRate', unit: 'bpm', icon: Icons.favorite, color: Colors.red)),
       ],
     );
   }
+}
 
-  Widget _buildLiveStepCard(BuildContext context, int steps) {
+class WorkoutCard extends StatelessWidget {
+  final String title, emoji, duration, burned, intensity;
+  const WorkoutCard({super.key, required this.title, required this.emoji, required this.duration, required this.burned, required this.intensity});
+
+  @override
+  Widget build(BuildContext context) {
     return PremiumCard(
-      height: 280,
-      gradient: [const Color(0xFF4C8CFF).withValues(alpha: 0.1), const Color(0xFF00E5FF).withValues(alpha: 0.05)],
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          StepRing(steps: steps, goal: 10000, size: 180, baseColor: Colors.white24, progressColor: const Color(0xFF00E5FF)),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSimpleStat('83%', 'Goal progress'),
-              const SizedBox(height: 24),
-              _buildSimpleStat('12', 'Active minutes'),
-              const SizedBox(height: 24),
-              _buildSimpleStat('🔥 4', 'Day streak'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleStat(String value, String label) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-      ],
-    );
-  }
-
-  Widget _buildHeatmapCard(BuildContext context, List<ActivityDay> days) {
-    return PremiumCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Consistency Map', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 16),
-          ActivityHeatmap(days: days),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStreakInfo('🔥 12', 'Current'),
-              _buildStreakInfo('📅 142', 'Total Days'),
-              _buildStreakInfo('🎯 94%', 'Completion'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStreakInfo(String value, String label) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54)),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(BuildContext context, String value, String unit, IconData icon, Color color) {
-    return PremiumCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(unit, style: const TextStyle(fontSize: 14, color: Colors.white54)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpcomingWorkout(BuildContext context) {
-    return PremiumCard(
-      gradient: [const Color(0xFFBB86FC).withValues(alpha: 0.15), const Color(0xFF9965F4).withValues(alpha: 0.05)],
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFFBB86FC).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.fitness_center_rounded, color: Color(0xFFBB86FC)),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16)),
+            child: Text(emoji, style: const TextStyle(fontSize: 24)),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Upper Body HIIT', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('Scheduled for 5:30 PM', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _MetaLabel(icon: Icons.timer, val: duration),
+                    const SizedBox(width: 12),
+                    _MetaLabel(icon: Icons.bolt, val: burned),
+                  ],
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.white24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(intensity, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w900, fontSize: 16)),
+              const Text('INTENSITY', style: TextStyle(color: Colors.white24, fontSize: 8)),
+            ],
+          ),
         ],
       ),
     );
+  }
+}
+
+class _MetaLabel extends StatelessWidget {
+  final IconData icon;
+  final String val;
+  const _MetaLabel({required this.icon, required this.val});
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [Icon(icon, size: 10, color: Colors.white38), const SizedBox(width: 4), Text(val, style: const TextStyle(color: Colors.white38, fontSize: 10))]);
   }
 }

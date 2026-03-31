@@ -1,8 +1,11 @@
+// lib/shared/widgets/shared_widgets.dart
 import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 import '../models/models.dart';
-import 'package:intl/intl.dart';
 
 class PremiumCard extends StatelessWidget {
   final Widget child;
@@ -28,35 +31,110 @@ class PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: height,
         width: width,
         margin: margin,
-        padding: padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          color: color ?? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02)),
+          borderRadius: BorderRadius.circular(28),
           gradient: gradient != null ? LinearGradient(colors: gradient!, begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-          boxShadow: isDark ? [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 40, offset: const Offset(0, 10)),
-            if (color != null) BoxShadow(color: color!.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8)),
-          ] : [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 40, offset: const Offset(0, 10)),
+          color: gradient == null ? (color ?? Colors.white.withValues(alpha: 0.05)) : null,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10)),
           ],
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        clipBehavior: Clip.antiAlias,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(20),
             child: child,
           ),
         ),
       ),
+    );
+  }
+}
+
+class AnimatedStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final IconData icon;
+  final Color color;
+
+  const AnimatedStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(height: 16),
+          Text(label, style: const TextStyle(color: Colors.white24, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Row(
+            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            children: [
+              Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(width: 4),
+              Text(unit, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOut);
+  }
+}
+
+class ActivityHeatmap extends StatelessWidget {
+  final List<ActivityDay> days;
+
+  const ActivityHeatmap({super.key, required this.days});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 15,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemCount: min(days.length, 90), 
+      itemBuilder: (context, index) {
+        final day = days[index];
+        final double opacity = (day.steps / 10000).clamp(0.1, 1.0);
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.blueAccent.withValues(alpha: opacity),
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [
+              if (opacity > 0.8) BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.3), blurRadius: 4, spreadRadius: 1),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -90,16 +168,16 @@ class StepRing extends StatelessWidget {
             percentage: percentage,
             baseColor: baseColor,
             progressColor: progressColor,
-            strokeWidth: 20,
+            strokeWidth: size * 0.12,
           ),
         ),
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(steps.toString(), style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: size * 0.2)),
-            Text('of $goal steps', style: Theme.of(context).textTheme.bodySmall),
+            Text(steps.toString(), style: GoogleFonts.syne(fontSize: size * 0.22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
+            Text('${(percentage * 100).toInt()}% GOAL', style: TextStyle(color: progressColor.withValues(alpha: 0.6), fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
           ],
-        ),
+        ).animate().scale(delay: 400.ms, duration: 600.ms, curve: Curves.elasticOut),
       ],
     );
   }
@@ -123,6 +201,14 @@ class _StepPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = min(size.width / 2, size.height / 2) - strokeWidth / 2;
 
+    // Outer Glow Shadow
+    final glowPaint = Paint()
+      ..color = progressColor.withValues(alpha: 0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    canvas.drawCircle(center, radius, glowPaint);
+
     // Background track
     final bgPaint = Paint()
       ..color = baseColor.withValues(alpha: 0.1)
@@ -136,8 +222,8 @@ class _StepPainter extends CustomPainter {
     final progressPaint = Paint()
       ..color = progressColor
       ..shader = SweepGradient(
-        colors: [progressColor.withValues(alpha: 0.5), progressColor],
-        stops: const [0, 1],
+        colors: [progressColor.withValues(alpha: 0.5), progressColor, progressColor.withValues(alpha: 0.8)],
+        stops: const [0, 0.8, 1],
         transform: const GradientRotation(-pi / 2),
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
@@ -151,97 +237,37 @@ class _StepPainter extends CustomPainter {
       false,
       progressPaint,
     );
-    
-    // Add glowing dot at the end
-    /* logic to find end point would go here */
+
+    // End Glow Cap
+    final double endAngle = -pi / 2 + 2 * pi * percentage;
+    final endOffset = Offset(center.dx + radius * cos(endAngle), center.dy + radius * sin(endAngle));
+    final capPaint = Paint()
+      ..color = Colors.white
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawCircle(endOffset, strokeWidth * 0.3, capPaint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-class ActivityHeatmap extends StatelessWidget {
-  final List<ActivityDay> days;
+class BadgeUnlockView extends StatelessWidget {
+  final String title;
+  final String lottiePath;
 
-  const ActivityHeatmap({super.key, required this.days});
+  const BadgeUnlockView({super.key, required this.title, required this.lottiePath});
 
   @override
   Widget build(BuildContext context) {
-    final int weeks = (days.length / 7).ceil();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 140, // 7 rows x 16px + spacing
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(weeks, (wIndex) {
-                return Column(
-                  children: List.generate(7, (dIndex) {
-                    final int dayIdx = (wIndex * 7) + dIndex;
-                    if (dayIdx >= days.length) return const SizedBox.shrink();
-                    final day = days[dayIdx];
-                    return _buildCell(context, day);
-                  }),
-                );
-              }),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildLegend(context),
-      ],
-    );
-  }
-
-  Widget _buildCell(BuildContext context, ActivityDay day) {
-    Color cellColor;
-    switch (day.intensityLevel) {
-      case 0: cellColor = const Color(0xFF1a1a2a); break;
-      case 1: cellColor = const Color(0xFF3F3F74); break;
-      case 2: cellColor = const Color(0xFF5E5EA3); break;
-      case 3: cellColor = const Color(0xFF7F7FD1); break;
-      case 4: cellColor = const Color(0xFFB388FF); break;
-      default: cellColor = const Color(0xFF1a1a2a);
-    }
-
-    final bool isToday = DateFormat('yyyy-MM-dd').format(day.date) == DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-    return Container(
-      width: 14,
-      height: 14,
-      margin: const EdgeInsets.all(1.5),
-      decoration: BoxDecoration(
-        color: cellColor,
-        borderRadius: BorderRadius.circular(3),
-        border: isToday ? Border.all(color: Colors.white, width: 1) : null,
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Lottie.asset(lottiePath, height: 200),
+          const SizedBox(height: 20),
+          Text('UNLOCKED: $title', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        ],
       ),
-    );
-  }
-
-  Widget _buildLegend(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        const Text('Less ', style: TextStyle(fontSize: 10, color: Colors.white54)),
-        _legendSquare(const Color(0xFF1a1a2a)),
-        _legendSquare(const Color(0xFF3F3F74)),
-        _legendSquare(const Color(0xFF5E5EA3)),
-        _legendSquare(const Color(0xFF7F7FD1)),
-        _legendSquare(const Color(0xFFB388FF)),
-        const Text(' More', style: TextStyle(fontSize: 10, color: Colors.white54)),
-      ],
-    );
-  }
-
-  Widget _legendSquare(Color color) {
-    return Container(
-      width: 10,
-      height: 10,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
     );
   }
 }

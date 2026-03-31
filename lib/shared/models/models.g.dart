@@ -18,30 +18,39 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
     };
     return UserProfile(
       name: fields[0] as String,
-      age: fields[1] as int,
+      height: fields[1] as double,
       weight: fields[2] as double,
-      height: fields[3] as double,
+      age: fields[3] as int,
       dailyStepGoal: fields[4] as int,
-      weeklyWorkoutGoal: fields[5] as int,
+      gender: fields[5] as String,
+      fitnessXP: fields[6] as int,
+      unlockedBadges: (fields[7] as List).cast<String>(),
+      measurements: (fields[8] as Map).cast<String, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserProfile obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.age)
+      ..write(obj.height)
       ..writeByte(2)
       ..write(obj.weight)
       ..writeByte(3)
-      ..write(obj.height)
+      ..write(obj.age)
       ..writeByte(4)
       ..write(obj.dailyStepGoal)
       ..writeByte(5)
-      ..write(obj.weeklyWorkoutGoal);
+      ..write(obj.gender)
+      ..writeByte(6)
+      ..write(obj.fitnessXP)
+      ..writeByte(7)
+      ..write(obj.unlockedBadges)
+      ..writeByte(8)
+      ..write(obj.measurements);
   }
 
   @override
@@ -68,29 +77,32 @@ class ActivityDayAdapter extends TypeAdapter<ActivityDay> {
     return ActivityDay(
       date: fields[0] as DateTime,
       steps: fields[1] as int,
-      calories: fields[2] as double,
-      distance: fields[3] as double,
-      activeMinutes: fields[4] as int,
-      workoutsCompleted: fields[5] as int,
+      waterIntake: fields[2] as int,
+      workoutsDone: (fields[3] as List).cast<String>(),
+      sleepMinutes: fields[4] as int,
+      moodScore: fields[5] as int,
+      hrvValue: fields[6] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, ActivityDay obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
       ..write(obj.steps)
       ..writeByte(2)
-      ..write(obj.calories)
+      ..write(obj.waterIntake)
       ..writeByte(3)
-      ..write(obj.distance)
+      ..write(obj.workoutsDone)
       ..writeByte(4)
-      ..write(obj.activeMinutes)
+      ..write(obj.sleepMinutes)
       ..writeByte(5)
-      ..write(obj.workoutsCompleted);
+      ..write(obj.moodScore)
+      ..writeByte(6)
+      ..write(obj.hrvValue);
   }
 
   @override
@@ -104,58 +116,9 @@ class ActivityDayAdapter extends TypeAdapter<ActivityDay> {
           typeId == other.typeId;
 }
 
-class ExerciseAdapter extends TypeAdapter<Exercise> {
-  @override
-  final int typeId = 2;
-
-  @override
-  Exercise read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-    return Exercise(
-      id: fields[0] as String,
-      name: fields[1] as String,
-      category: fields[2] as String,
-      description: fields[3] as String,
-      gifUrl: fields[4] as String?,
-      targetMuscles: (fields[5] as List).cast<String>(),
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Exercise obj) {
-    writer
-      ..writeByte(6)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.category)
-      ..writeByte(3)
-      ..write(obj.description)
-      ..writeByte(4)
-      ..write(obj.gifUrl)
-      ..writeByte(5)
-      ..write(obj.targetMuscles);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ExerciseAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
-}
-
 class WorkoutSessionAdapter extends TypeAdapter<WorkoutSession> {
   @override
-  final int typeId = 3;
+  final int typeId = 2;
 
   @override
   WorkoutSession read(BinaryReader reader) {
@@ -164,28 +127,25 @@ class WorkoutSessionAdapter extends TypeAdapter<WorkoutSession> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return WorkoutSession(
-      id: fields[0] as String,
-      name: fields[1] as String,
-      date: fields[2] as DateTime,
-      exercises: (fields[3] as List).cast<WorkoutExercise>(),
-      totalDuration: fields[4] as Duration,
+      title: fields[0] as String,
+      exercises: (fields[1] as List).cast<ExerciseLog>(),
+      startTime: fields[2] as DateTime,
+      durationSeconds: fields[3] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, WorkoutSession obj) {
     writer
-      ..writeByte(5)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.date)
-      ..writeByte(3)
-      ..write(obj.exercises)
       ..writeByte(4)
-      ..write(obj.totalDuration);
+      ..writeByte(0)
+      ..write(obj.title)
+      ..writeByte(1)
+      ..write(obj.exercises)
+      ..writeByte(2)
+      ..write(obj.startTime)
+      ..writeByte(3)
+      ..write(obj.durationSeconds);
   }
 
   @override
@@ -199,30 +159,36 @@ class WorkoutSessionAdapter extends TypeAdapter<WorkoutSession> {
           typeId == other.typeId;
 }
 
-class WorkoutExerciseAdapter extends TypeAdapter<WorkoutExercise> {
+class ExerciseLogAdapter extends TypeAdapter<ExerciseLog> {
   @override
-  final int typeId = 4;
+  final int typeId = 3;
 
   @override
-  WorkoutExercise read(BinaryReader reader) {
+  ExerciseLog read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return WorkoutExercise(
-      exerciseId: fields[0] as String,
-      sets: (fields[1] as List).cast<ExerciseSet>(),
+    return ExerciseLog(
+      name: fields[0] as String,
+      sets: fields[1] as int,
+      reps: fields[2] as int,
+      weight: fields[3] as double,
     );
   }
 
   @override
-  void write(BinaryWriter writer, WorkoutExercise obj) {
+  void write(BinaryWriter writer, ExerciseLog obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.exerciseId)
+      ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.sets);
+      ..write(obj.sets)
+      ..writeByte(2)
+      ..write(obj.reps)
+      ..writeByte(3)
+      ..write(obj.weight);
   }
 
   @override
@@ -231,38 +197,38 @@ class WorkoutExerciseAdapter extends TypeAdapter<WorkoutExercise> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WorkoutExerciseAdapter &&
+      other is ExerciseLogAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
 
-class ExerciseSetAdapter extends TypeAdapter<ExerciseSet> {
+class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
   @override
-  final int typeId = 5;
+  final int typeId = 4;
 
   @override
-  ExerciseSet read(BinaryReader reader) {
+  JournalEntry read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return ExerciseSet(
-      reps: fields[0] as int,
-      weight: fields[1] as double,
-      isCompleted: fields[2] as bool,
+    return JournalEntry(
+      date: fields[0] as DateTime,
+      text: fields[1] as String,
+      tags: (fields[2] as List).cast<String>(),
     );
   }
 
   @override
-  void write(BinaryWriter writer, ExerciseSet obj) {
+  void write(BinaryWriter writer, JournalEntry obj) {
     writer
       ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.reps)
+      ..write(obj.date)
       ..writeByte(1)
-      ..write(obj.weight)
+      ..write(obj.text)
       ..writeByte(2)
-      ..write(obj.isCompleted);
+      ..write(obj.tags);
   }
 
   @override
@@ -271,7 +237,7 @@ class ExerciseSetAdapter extends TypeAdapter<ExerciseSet> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ExerciseSetAdapter &&
+      other is JournalEntryAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
