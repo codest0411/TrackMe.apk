@@ -676,9 +676,8 @@ IN THE SOFTWARE.
 
 <br/>
 
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/trackme?style=social)](https://github.com/yourusername/trackme)
+[![GitHub stars](https://img.shields.io/github/stars/yourusername/trackme?style=social)](https://github.com/codest0411/TrackMe.apk)
 &nbsp;&nbsp;
-[![Twitter Follow](https://img.shields.io/twitter/follow/trackmeapp?style=social)](https://twitter.com/trackmeapp)
 
 <br/>
 
