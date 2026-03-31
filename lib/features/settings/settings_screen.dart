@@ -31,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
             _link('Storage Management', Icons.storage),
             _link('Privacy Settings', Icons.security),
             const SizedBox(height: 48),
-            Center(child: Text('TrackMe Premium v1.0.0', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12))),
+            Center(child: Text('TrackMe Premium v1.0.0', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 12))),
           ],
         ),
       ),

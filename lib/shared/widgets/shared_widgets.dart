@@ -125,7 +125,7 @@ class _StepPainter extends CustomPainter {
 
     // Background track
     final bgPaint = Paint()
-      ..color = baseColor.withOpacity(0.1)
+      ..color = baseColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
